@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Royal Orders</title>
+<style>
+:root{--bg:#f3f5f9;--cd:#fff;--tx:#1b2430;--mu:#68758a;--pr:#1F4E78;--ok:#1a7f37;--bad:#c62828;--bd:#d6dce6}
+@media(prefers-color-scheme:dark){:root{--bg:#12161c;--cd:#1c222b;--tx:#e8ecf2;--mu:#98a3b3;--pr:#4f8fcb;--ok:#4caf50;--bad:#ef7070;--bd:#323b48}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif}
+header{background:var(--pr);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+header b{font-size:18px}header button{width:auto;margin:0;padding:6px 12px;background:rgba(255,255,255,.18);font-size:13px}
+main{max-width:1100px;margin:auto;padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.g{display:grid;gap:14px}@media(min-width:900px){.g{grid-template-columns:360px 1fr;align-items:start}}
+.c{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:14px}
+h2{margin:0 0 8px;font-size:16px}label{font-size:12px;color:var(--mu);display:block;margin:9px 0 3px}
+input{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px}
+.r{display:flex;gap:8px}.r>div{flex:1;min-width:0}
+button{background:var(--pr);color:#fff;border:0;border-radius:9px;padding:11px 14px;font-size:15px;font-weight:600;width:100%;margin-top:10px;cursor:pointer}
+button.s{background:transparent;color:var(--pr);border:1px solid var(--pr)}button:disabled{opacity:.5}
+.it{display:grid;grid-template-columns:1fr 60px 84px 74px 28px;gap:6px;align-items:center;margin-bottom:4px}
+.it .am{text-align:right;color:var(--mu);font-size:13px}.it .x{background:none;color:var(--bad);margin:0;padding:4px;width:auto}
+.it .sh{grid-column:1/-1;margin:0 0 8px;font-size:12px;color:var(--mu);display:flex;gap:6px;align-items:center}.it .sh input{width:auto}
+@media(max-width:520px){.it{grid-template-columns:1fr 54px 72px 62px 24px}}
+.t{display:flex;justify-content:space-between;padding:3px 0}.t b{font-size:18px}
+.ok{color:var(--ok)}.bd{color:var(--bad)}#m{line-height:1.7;font-size:14px}#lg{max-width:360px;margin:60px auto}
+</style></head><body>
+<div id="lg" class="c"><h2>Royal Orders</h2><label>PIN</label><input id="pin" type="password" inputmode="numeric" onkeydown="if(event.key==='Enter')login()">
+<button onclick="login()">Open</button><div id="le" class="bd" style="margin-top:8px"></div></div>
+<div id="ap" hidden>
+<header><b>Royal Orders</b><button onclick="logout()">Log out</button></header>
+<main><div class="g">
+<div><div class="c"><h2>Customer</h2>
+<div class="r"><div><label>Date</label><input id="d" type="date"></div><div><label>Order No</label><input id="no" type="number" inputmode="numeric"></div></div>
+<div class="r"><div><label>Order taker</label><input id="tk"></div><div><label>City</label><input id="ci"></div></div>
+<label>Customer name</label><input id="nm"><label>Phone number</label><input id="ph" inputmode="tel"><label>Address</label><input id="ad"></div>
+<div class="c" id="rs" hidden style="margin-top:14px"><div id="m"></div></div></div>
+<div><div class="c"><h2>Items</h2><div id="its"></div><datalist id="pl"></datalist>
+<button class="s" onclick="addRow()">+ Add item</button>
+<div class="r"><div><label>Delivery charges</label><input id="dc" type="number" inputmode="numeric" oninput="calc()"></div><div><label>Advance</label><input id="av" type="number" inputmode="numeric" oninput="calc()"></div></div>
+<div class="t" style="margin-top:10px"><span>Items total</span><span id="s1">0</span></div><div class="t"><b>Payable (COD)</b><b id="s2">0</b></div>
+<button id="sv" onclick="save()">Save bill</button></div>
+<div class="c" style="margin-top:14px"><h2>Excel download</h2><div class="r"><div><label>From</label><input id="f" type="date"></div><div><label>To</label><input id="e" type="date"></div></div>
+<button class="s" id="dl" onclick="dl()">Download Excel</button>
+<div id="bw" hidden><div id="bn" class="bd" style="margin-top:10px"></div><button class="s" onclick="retry()">Retry failed syncs</button></div></div></div>
+</div></main></div>
+<script>
+const API='https://script.google.com/macros/s/AKfycbwP4lQLvqiiq14ACDm9jJc5-u7lmg_h_9D6Dk4CPO7vCzYxLM2rgn0IVXEikWrHGpKU/exec';   // Apps Script Web App URL (ends with /exec)
+let pin='',pr={};const $=i=>document.getElementById(i);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function api(a,x){let r;try{r=await fetch(API,{method:'POST',body:JSON.stringify(Object.assign({a,pin},x||{}))})}catch(e){throw new Error('Cannot reach server. Check internet / API URL.')}
+ const j=await r.json();if(j.error)throw new Error(j.error);return j}
+async function login(){pin=$('pin').value.trim()||pin;$('le').textContent='';
+ try{const s=await api('state');try{sessionStorage.setItem('pin',pin)}catch(e){}init(s)}catch(e){$('le').textContent=e.message}}
+function logout(){try{sessionStorage.removeItem('pin')}catch(e){}location.reload()}
+function init(s){$('lg').hidden=true;$('ap').hidden=false;
+ $('pl').innerHTML=s.products.map(p=>{pr[p.n.toUpperCase()]=p.p;return '<option value="'+esc(p.n)+'">'}).join('');
+ $('d').value=s.today;$('f').value=s.today.slice(0,8)+'01';$('e').value=s.today;$('no').value=s.next;$('tk').value=s.taker;$('dc').value=s.dc;
+ resetItems();bad(s.bad)}
+function bad(n){$('bw').hidden=!n;$('bn').textContent=n+' order(s) failed to sync with Royal Stock / Master'}
+function resetItems(){$('its').innerHTML='';for(let i=0;i<3;i++)addRow();calc()}
+function addRow(){const r=document.createElement('div');r.className='it';
+ r.innerHTML='<input list="pl" placeholder="Product"><input type="number" inputmode="decimal" value="1"><input type="number" inputmode="numeric" placeholder="Price"><span class="am">0</span><button class="x" title="Remove">&times;</button><label class="sh"><input type="checkbox"> \uD83D\uDED2 Bought from shop (not in stock)</label>';
+ const a=r.children;a[0].onchange=()=>{const p=pr[a[0].value.trim().toUpperCase()];if(p!==undefined&&p!=='')a[2].value=p;calc()};
+ a[1].oninput=a[2].oninput=calc;a[4].onclick=()=>{r.remove();calc()};$('its').appendChild(r)}
+function rows(){return [...$('its').children].map(r=>{const a=r.children;return{p:a[0].value.trim().toUpperCase(),q:+a[1].value,r:+a[2].value,ns:r.querySelector('input[type=checkbox]').checked,el:a[3]}})}
+function calc(){let t=0;rows().forEach(i=>{const v=i.p&&i.q>0?i.q*i.r:0;i.el.textContent=v;t+=v});
+ $('s1').textContent=t;$('s2').textContent=t+(+$('dc').value||0)-(+$('av').value||0)}
+async function save(){const it=rows().filter(i=>i.p&&i.q>0);
+ if(!$('no').value||!it.length){alert('Enter the order no and at least one item.');return}
+ if(it.some(i=>!(i.r>0))&&!confirm('An item has no price. Save anyway?'))return;
+ $('sv').disabled=true;
+ const o={date:$('d').value,orderNo:$('no').value,taker:$('tk').value.trim().toUpperCase(),city:$('ci').value.trim().toUpperCase(),name:$('nm').value.trim().toUpperCase(),
+  number:$('ph').value.trim(),address:$('ad').value.trim().toUpperCase(),dc:$('dc').value,adv:$('av').value,items:it.map(i=>({p:i.p,q:i.q,r:i.r,ns:i.ns}))};
+ try{const r=await api('save',{o});
+  const f=x=>x==='OK'?'<span class="ok">\u2705 OK</span>':'<span class="bd">'+esc(x)+'</span>';
+  $('rs').hidden=false;$('m').innerHTML='\u2705 <b>Order #'+r.orderNo+'</b> saved (payable Rs '+r.payable+')<br>Royal Stock: '+f(r.stock)+'<br>Master sheet: '+f(r.master);
+  $('no').value=r.next;['ci','nm','ph','ad','av'].forEach(k=>$(k).value='');resetItems();
+  api('state').then(s=>bad(s.bad)).catch(()=>{})}
+ catch(e){alert(e.message)}$('sv').disabled=false}
+async function dl(){$('dl').disabled=true;$('dl').textContent='Preparing...';
+ try{const r=await api('export',{from:$('f').value,to:$('e').value});
+  const a=document.createElement('a');a.href='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+r.b64;a.download=r.name;document.body.appendChild(a);a.click();a.remove()}
+ catch(e){alert(e.message)}$('dl').disabled=false;$('dl').textContent='Download Excel'}
+async function retry(){try{const r=await api('retry');alert('Fixed: '+r.fixed+' | still failing: '+r.left);bad(r.left)}catch(e){alert(e.message)}}
+try{pin=sessionStorage.getItem('pin')||'';if(pin)login()}catch(e){}
+</script></body></html>
